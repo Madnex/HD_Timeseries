@@ -1,0 +1,15 @@
+---
+title: 'Homework Assignment #1'
+author: "Hornella Fakem Fosso & Jan Lennarz"
+date: "1/23/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+```
+
+
+```{r}
+summary(cars)
+```
