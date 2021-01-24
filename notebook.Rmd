@@ -2,11 +2,13 @@
 title: 'Homework Assignment #1'
 author: "Hornella Fokem Fosso & Jan Lennarz"
 date: "1/23/2021"
-output: pdf_document
+output:
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 ```
 
 
@@ -107,3 +109,199 @@ plot(ns, sNorm, xlab = "n", ylab = "squared norm", main = "graph for T = 1000")
 ```{r}
 
 ```
+
+
+# Exercise 2
+
+Data: The series are of various lengths but all end in 1988.  The data set contains the following series: consumer  price  index,  industrial  production,  nominal  GNP,  velocity,  employment,  interest  rate, nominal wages, GNP deflator, money stock, real GNP, stock prices (S&P500), GNP per capita, realwages, unemployment.
+
+We look only at the GNP per capita, nominal  GNP and the real GNP.
+
+Source: C. R. Nelson and C. I. Plosser (1982), Trends and Random Walks in Macroeconomic Time Series.Journal of Monetary Economics,10, 139–162. doi: 10.1016/03043932(82)900125.Formerly in the Journal of Business and Economic Statistics data archive,  currently athttp://korora.econ.yale.edu/phillips/data/np&enp.dat.
+
+## 1.
+
+### Stationarity
+
+```{r echo=FALSE, results='hide'}
+require(MTS)
+library(tseries)
+require(sparsevar)
+```
+
+First we read the data and do some preprocessing.
+```{r}
+data(NelPlo)
+gnp <- cbind(1,2,gnp.capita, gnp.nom, gnp.real)
+n <- dim(gnp)[1]
+```
+
+We will look at 3 different versions of the data: Original, log-transformation, series of differences of the log-transformation.
+
+```{r}
+Y_orig <- gnp[,3:5]
+Y_log=log(gnp[,3:5])
+Y_rate <- Y_log[2:n,] - Y_log[1:(n-1),]
+Y_rate <- 100*Y_rate
+```
+
+*Original:*
+```{r}
+par(mfrow=c(2,3))
+plot(Y_orig[,1],type="l",xlab="",ylab="Log",main="GNP per Capita")
+plot(Y_orig[,2],type="l",xlab="",ylab="Log",main="Nominal GNP")
+plot(Y_orig[,3],type="l",xlab="",ylab="Log",main="Real GNP")
+acf(Y_orig[,1],main="")
+acf(Y_orig[,2],main="")
+acf(Y_orig[,3],main="")
+```
+
+We see that the original data is not stationary.
+
+*Log-Transformation:*
+```{r fig.height=5, fig.width=9}
+par(mfrow=c(2,3))
+plot(Y_log[,1],type="l",xlab="",ylab="Log",main="GNP per Capita")
+plot(Y_log[,2],type="l",xlab="",ylab="Log",main="Nominal GNP")
+plot(Y_log[,3],type="l",xlab="",ylab="Log",main="Real GNP")
+acf(Y_log[,1],main="")
+acf(Y_log[,2],main="")
+acf(Y_log[,3],main="")
+```
+
+Same goes for the log-transformation.
+
+*Log-Transformation rates:*
+
+```{r fig.height=5, fig.width=9}
+par(mfrow=c(2,3))
+plot(Y_rate[,1],type="l",xlab="",ylab="GNP per Capita")
+plot(Y_rate[,2],type="l",xlab="",ylab="Nominal GNP")
+plot(Y_rate[,3],type="l",xlab="",ylab="Real GNP")
+acf(Y_rate[,1],main="")
+acf(Y_rate[,2],main="")
+acf(Y_rate[,3],main="")
+```
+
+For the rates we can find stationary for all three GNP series. For all three the autocorrelation vanhishes with a lag of 3 which results in $q=2$ for the MA.
+
+Looking at the partial autocorrelation we find the following:
+
+```{r fig.height=2}
+par(mfrow=c(1,3))
+pacf(Y_rate[,1], main="GNP per Capita")
+pacf(Y_rate[,2], main="Nominal GNP")
+pacf(Y_rate[,3], main="Real GNP")
+```
+
+The GNP partial autocorrelation vanishes after a lag of 2, which results in $p=1$ for the AR part.
+
+### ARMA
+We can create an ARMA model for each series individually.
+
+*GNP per Capita:*
+```{r}
+arma.1 <- arma(Y_rate[,1], order = c(1, 2))
+summary(arma.1)
+```
+
+*Nominal GNP:*
+```{r}
+arma.2 <- arma(Y_rate[,2], order = c(1, 2))
+summary(arma.2)
+```
+
+*Real GNP:*
+```{r}
+arma.3 <- arma(Y_rate[,3], order = c(1, 2))
+summary(arma.3)
+```
+
+We see that for each ARMA model the fit is not perfect. Especially the model for the Real GNP shows flaws.
+
+## 2.
+
+### VAR(1) model
+
+```{r}
+mod=VAR(Y_rate,1)
+res=mod$residuals
+```
+
+
+Checking the WN assumption:
+
+```{r, results='hide', fig.keep='all', fig.height=3}
+mq(res,adj=1*3^2)
+
+par(mfrow=c(1,3))
+acf(res[,1], main="")
+acf(res[,2], main="")
+acf(res[,3], main="")
+```
+
+```{r results='hide'}
+VARorder(Y_rate) # Selected order is 1
+mod2=refVAR(mod,thres=1.96)      #remove non significant coefficients using t stats
+mod$aic
+mod2$aic
+```
+
+Considering the AIC and BIC the reduced model performs better.
+
+```{r message=FALSE, results='hide'}
+pred1 <- VARpred(mod,1)
+pred2 <- VARpred(mod2,1)
+rmse <- rbind(mod1=pred1$rmse, mod2=pred2$rmse)
+rownames(rmse) <- c("model1", "model2")
+```
+
+```{r echo=FALSE}
+rmse
+```
+
+We can see that the prediction is better for the full model (mod1). But the difference is rather small. It might make sense to consider the simpler model (mod2) then.
+
+## 3. VAR with LASSO
+
+```{r}
+mod_lasso=fitVAR(Y_rate,p=1,penalty="ENET",method="cv")
+```
+
+When we look at the coefficients we see that only the coefficients for the real GNP are of a considerable amplitude.
+
+```{r}
+coef=mod_lasso$A;A1lasso=coef[[1]]
+plotMatrix(A1lasso)
+```
+
+
+Checking the WN assumption
+```{r results='hide', fig.keep='all', fig.height=3}
+res_lasso=mod_lasso$residuals
+
+mq(res_lasso,adj=1*3^2)
+
+par(mfrow=c(1,3))
+acf(res_lasso[,1], main="")
+acf(res_lasso[,2], main="")
+acf(res_lasso[,3], main="")
+```
+
+We see that the White Noise assumption does hold for all three series.
+
+### Comparison with the simple VAR
+
+```{r}
+mod_lasso$A
+```
+
+I don't know :(
+
+
+
+
+
+
+
+
