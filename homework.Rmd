@@ -1,0 +1,96 @@
+---
+title: "Homework"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+```
+
+# Exercise 2
+
+We make use of the Air Quality Data Set
+Source: https://archive.ics.uci.edu/ml/datasets/Air+quality
+
+CO.GT.: True hourly averaged concentration CO in mg/m^3 (reference analyzer) 
+C6H6.GT.: True hourly averaged Benzene concentration in microg/m^3 (reference analyzer) 
+T: Temperature in °C 
+
+## 1.
+
+### Stationarity
+
+```{r echo=FALSE, results='hide'}
+require(MTS)
+```
+
+First we read the data and do some preprocessing.
+```{r}
+air <- read.csv("Data/AirQualityUCI.csv", header = TRUE, sep = ";")
+air <- air[,c(1,2,3,6,13)]
+air$Date <- as.Date(air$Date, format="%d/%m/%Y")
+air$Time <- as.numeric(air$Time)-2
+air$CO.GT. <- as.numeric(air$CO.GT.)
+air$T <- as.numeric(air$T)
+air$C6H6.GT. <- as.numeric(air$C6H6.GT.)
+n = dim(air)[1]
+```
+
+We will look at 3 different versions of the data: Original, log-transformation, series of differences of the log-transformation.
+
+```{r}
+Y_orig <- air[,3:5]
+Y_log=log(air[,3:5])
+Y_rate <- Y_log[2:n,] - Y_log[1:(n-1),]
+Y_rate <- 100*Y_rate
+```
+
+*Original:*
+```{r}
+par(mfrow=c(2,3))
+plot(air$Date,Y_orig[,1],type="l",xlab="",ylab="Log",main="CO.GT")
+plot(air$Date,Y_orig[,2],type="l",xlab="",ylab="Log",main="C6H6.GT")
+plot(air$Date,Y_orig[,3],type="l",xlab="",ylab="Log",main="T")
+acf(Y_orig[,1],main="")
+acf(Y_orig[,2],main="")
+acf(Y_orig[,3],main="")
+```
+
+We see that the original data is not stationary.
+
+*Log-Transformation:*
+```{r fig.height=5, fig.width=9}
+par(mfrow=c(2,3))
+plot(air$Date,Y_log[,1],type="l",xlab="",ylab="Log",main="CO.GT")
+plot(air$Date,Y_log[,2],type="l",xlab="",ylab="Log",main="C6H6.GT")
+plot(air$Date,Y_log[,3],type="l",xlab="",ylab="Log",main="T")
+acf(Y_log[,1],main="")
+acf(Y_log[,2],main="")
+acf(Y_log[,3],main="")
+```
+
+Same goes for the log-transformation.
+
+*Log-Transformation rates:*
+
+```{r fig.height=5, fig.width=9}
+par(mfrow=c(2,3))
+plot(air$Date[2:n],Y_rate[,1],type="l",xlab="",ylab="Rate CO.GT")
+plot(air$Date[2:n],Y_rate[,2],type="l",xlab="",ylab="Rate C6H6.GT")
+plot(air$Date[2:n],Y_rate[,3],type="l",xlab="",ylab="Rate T")
+acf(Y_rate[,1],main="")
+acf(Y_rate[,2],main="")
+acf(Y_rate[,3],main="")
+```
+
+For the rates we can find stationary for the Benzene concentration (C6H6.GT) and the Temperatur (T). For the rate of the CO concentration (CO.GT) we can see that the autocorrelation is not yet perfectly vanished. 
+
+
+### ARMA
+
+
+
+
+
