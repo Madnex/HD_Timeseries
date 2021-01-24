@@ -1,6 +1,6 @@
 ---
 title: 'Homework Assignment #1'
-author: "Hornella Fakem Fosso & Jan Lennarz"
+author: "Hornella Fokem Fosso & Jan Lennarz"
 date: "1/23/2021"
 output: pdf_document
 ---
@@ -8,6 +8,100 @@ output: pdf_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = FALSE)
 ```
+
+
+
+## Exercise 1
+
+In this exercise, it will be simulated for different values of $n$, a path of length $T$ from the VAR($1$) model $$\mathbf{X}_t = A_n\mathbf{X}_{t-1} + \epsilon_t, ~~~ t \in \mathbb{Z},$$ where $(\epsilon_t)  \subset \mathbb{R}$ is s a multivariate standard Gaussian white noise.
+
+```{r include=FALSE}
+require(MTS)
+set.seed(2301)
+```
+
+we perform the simulation for $T=100$ and plot the values of the squared norm corresponding to each $n$.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+ns <- c(2,5,10,20) # different values of n
+lT <- 100          # length T
+sNorm <- numeric(length(ns))  # for storing the squared norms
+for (s in 1:length(ns)) {
+  n <- ns[s]
+  X=matrix(0,nrow=n ,ncol=lT)
+  An <- 0.5*diag(n)
+  for (i in 1:(n-1)) {
+    An[i,i+1] <- 1/5
+  }
+  for (j in 2:lT) {
+    X[,j] <- An %*% X[,(j-1)] + t(t(rnorm(n)))
+  }
+  Estim <- VAR(t(X),1, output = F)
+  A_hat <- Estim$Phi
+  B <- A_hat - An
+  B <- crossprod(B)
+  sNorm[s] <- max(abs(eigen(B)$values))
+}
+
+plot(ns, sNorm, xlab = "n", ylab = "squared norm", main = "graph for T = 100")
+
+```
+
+The plot shows that the squared norm increases when n becomes larger. In other words, the estimation error of the  seems to be larger when the dimension of the vector is increased. Let's repeat the experiment for $T=500$ and for $T=1000$
+
+```{r }
+ns <- c(2,5,10,20)
+lT <- 500
+sNorm <- numeric(length(ns))
+for (s in 1:length(ns)) {
+  n <- ns[s]
+  X=matrix(0,nrow=n ,ncol=lT)
+  An <- 0.5*diag(n)
+  for (i in 1:(n-1)) {
+    An[i,i+1] <- 1/5
+  }
+  for (j in 2:lT) {
+    X[,j] <- An %*% X[,(j-1)] + t(t(rnorm(n)))
+  }
+  Estim <- VAR(t(X),1, output = F)
+  A_hat <- Estim$Phi
+  B <- A_hat - An
+  B <- crossprod(B)
+  sNorm[s] <- max(abs(eigen(B)$values))
+}
+
+plot(ns, sNorm, xlab = "n", ylab = "squared norm", main = "graph for T = 500")
+
+```
+
+
+
+```{r }
+ns <- c(2,5,10,20)
+lT <- 1000
+sNorm <- numeric(length(ns))
+for (s in 1:length(ns)) {
+  n <- ns[s]
+  X=matrix(0,nrow=n ,ncol=lT)
+  An <- 0.5*diag(n)
+  for (i in 1:(n-1)) {
+    An[i,i+1] <- 1/5
+  }
+  for (j in 2:lT) {
+    X[,j] <- An %*% X[,(j-1)] + t(t(rnorm(n)))
+  }
+  Estim <- VAR(t(X),1, output = F)
+  A_hat <- Estim$Phi
+  B <- A_hat - An
+  B <- crossprod(B)
+  sNorm[s] <- max(abs(eigen(B)$values))
+}
+
+plot(ns, sNorm, xlab = "n", ylab = "squared norm", main = "graph for T = 1000")
+
+```
+
+
 
 
 ```{r}
