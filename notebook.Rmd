@@ -15,14 +15,15 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 
 ## Exercise 1
 
-In this exercise, it will be simulated for different values of $n$, a path of length $T$ from the VAR($1$) model $$\mathbf{X}_t = A_n\mathbf{X}_{t-1} + \epsilon_t, ~~~ t \in \mathbb{Z},$$ where $(\epsilon_t)  \subset \mathbb{R}$ is s a multivariate standard Gaussian white noise.
+In this exercise, it will be simulated for different values of $n$, a path of length $T$ from the VAR($1$) model $$\mathbf{X}_t = A_n\mathbf{X}_{t-1} + \epsilon_t, ~~~ t \in \mathbb{Z},$$ where $(\epsilon_t)  \subset \mathbb{R}$ is a multivariate standard Gaussian white noise. 
 
 ```{r include=FALSE}
 require(MTS)
+library(ggplot2)
 set.seed(2301)
 ```
 
-we perform the simulation for $T=100$ and plot the values of the squared norm corresponding to each $n$.
+we perform the simulation for $T=100$ and plot the values of the squared norm $\| \hat{A}_n - A_n \|^2_2 $ corresponding to each $n$.
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 ns <- c(2,5,10,20) # different values of n
@@ -49,30 +50,30 @@ plot(ns, sNorm, xlab = "n", ylab = "squared norm", main = "graph for T = 100")
 
 ```
 
-The plot shows that the squared norm increases when n becomes larger. In other words, the estimation error of the  seems to be larger when the dimension of the vector is increased. Let's repeat the experiment for $T=500$ and for $T=1000$
+The plot shows that the squared norm increases when n becomes larger. In other words, the estimation error of the AR coefficient polynomial seems to be larger when the dimension of the vector is increased. Let's repeat the experiment for $T=500$ and for $T=1000$
 
 ```{r }
 ns <- c(2,5,10,20)
-lT <- 500
-sNorm <- numeric(length(ns))
+lT500 <- 500
+sNorm500 <- numeric(length(ns))
 for (s in 1:length(ns)) {
   n <- ns[s]
-  X=matrix(0,nrow=n ,ncol=lT)
+  X=matrix(0,nrow=n ,ncol=lT500)
   An <- 0.5*diag(n)
   for (i in 1:(n-1)) {
     An[i,i+1] <- 1/5
   }
-  for (j in 2:lT) {
+  for (j in 2:lT500) {
     X[,j] <- An %*% X[,(j-1)] + t(t(rnorm(n)))
   }
   Estim <- VAR(t(X),1, output = F)
   A_hat <- Estim$Phi
   B <- A_hat - An
   B <- crossprod(B)
-  sNorm[s] <- max(abs(eigen(B)$values))
+  sNorm500[s] <- max(abs(eigen(B)$values))
 }
 
-plot(ns, sNorm, xlab = "n", ylab = "squared norm", main = "graph for T = 500")
+plot(ns, sNorm500, xlab = "n", ylab = "squared norm", main = "graph for T = 500")
 
 ```
 
@@ -81,7 +82,7 @@ plot(ns, sNorm, xlab = "n", ylab = "squared norm", main = "graph for T = 500")
 ```{r }
 ns <- c(2,5,10,20)
 lT <- 1000
-sNorm <- numeric(length(ns))
+sNorm1000 <- numeric(length(ns))
 for (s in 1:length(ns)) {
   n <- ns[s]
   X=matrix(0,nrow=n ,ncol=lT)
@@ -96,17 +97,25 @@ for (s in 1:length(ns)) {
   A_hat <- Estim$Phi
   B <- A_hat - An
   B <- crossprod(B)
-  sNorm[s] <- max(abs(eigen(B)$values))
+  sNorm1000[s] <- max(abs(eigen(B)$values))
 }
 
-plot(ns, sNorm, xlab = "n", ylab = "squared norm", main = "graph for T = 1000")
+plot(ns, sNorm1000, xlab = "n", ylab = "squared norm", main = "graph for T = 1000")
 
 ```
 
-
+The squared norm 
 
 
 ```{r}
+ns <- rep(ns,3)
+squared_norm <- c(sNorm, sNorm500, sNorm1000)
+path_length <- c(rep(100,4), rep(500,4), rep(1000,4))
+tpdata <- as.data.frame(cbind(ns, squared_norm, path_length))
+tpdata$path_length <- as.factor(tpdata$path_length)
+
+
+ggplot(tpdata, aes(ns, squared_norm, colour = path_length)) + geom_point()
 
 ```
 
